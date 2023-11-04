@@ -1,0 +1,92 @@
+
+// Include Libraries
+#include "Arduino.h"
+#include "HallA1302.h"
+#include "LiquidCrystal_PCF8574.h"
+#include "LED.h"
+
+
+// Pin Definitions
+#define HALLA_PIN_VOUT	A3
+#define LEDR_PIN_VIN	5
+
+
+
+// Global variables and defines
+// There are several different versions of the LCD I2C adapter, each might have a different address.
+// Try the given addresses by Un/commenting the following rows until LCD works follow the serial monitor prints. 
+// To find your LCD address go to: http://playground.arduino.cc/Main/I2cScanner and run example.
+#define LCD_ADDRESS 0x3F
+//#define LCD_ADDRESS 0x27
+// Define LCD characteristics
+#define LCD_ROWS 2
+#define LCD_COLUMNS 16
+#define SCROLL_DELAY 150
+#define BACKLIGHT 255
+// object initialization
+HallA1302 hallA(HALLA_PIN_VOUT);
+LiquidCrystal_PCF8574 lcdI2C;
+LED ledR(LEDR_PIN_VIN);
+
+
+// define vars for testing menu
+const int timeout = 10000;       //define timeout of 10 sec
+char menuOption = 0;
+long time0;
+
+// Setup the essentials for your circuit to work. It runs first every time your circuit is powered with electricity.
+void setup() 
+{
+    // Setup Serial which is useful for debugging
+    // Use the Serial Monitor to view printed messages
+    Serial.begin(9600);
+    while (!Serial) ; // wait for serial port to connect. Needed for native USB
+    Serial.println("start");
+    
+    //Calibrate sensor
+    hallA.calibrate();
+    // initialize the lcd
+    lcdI2C.begin(LCD_COLUMNS, LCD_ROWS, LCD_ADDRESS, BACKLIGHT); 
+    menuOption = menu();
+    
+}
+
+// Main logic of your circuit. It defines the interaction between the components you selected. After setup, it runs over and over again, in an eternal loop.
+void loop() 
+{
+    
+    
+    if(menuOption == '1') {
+    // A1302 Linear Hall Effect Sensor - Test Code
+    //Get Measurment from hall sensor. Depending on the magnet pole polarity the sensor will return positive or negative values.
+    int hallAVal = hallA.getMeasurment();
+    Serial.print(F("Hall: ")); Serial.println(hallAVal);
+
+    }
+    else if(menuOption == '2') {
+    // LCD 16x2 I2C - Test Code
+    // The LCD Screen will display the text of your choice.
+    lcdI2C.clear();                          // Clear LCD screen.
+    lcdI2C.print("  Circuito.io  ");                   // Print print String to LCD on first line
+    lcdI2C.selectLine(2);                    // Set cursor at the begining of line 2
+    lcdI2C.print("     Rocks!  ");                   // Print print String to LCD on second line
+    delay(1000);
+
+    }
+    else if(menuOption == '3') {
+    // LED - Basic Red 5mm - Test Code
+    // The LED will turn on and fade till it is off
+    for(int i=255 ; i> 0 ; i -= 5)
+    {
+    ledR.dim(i);                      // 1. Dim Led 
+    delay(15);                               // 2. waits 5 milliseconds (0.5 sec). Change the value in the brackets (500) for a longer or shorter delay in milliseconds.
+    }                                          
+    ledR.off();                        // 3. turns off
+    }
+    
+    if (millis() - time0 > timeout)
+    {
+        menuOption = menu();
+    }
+    
+}
