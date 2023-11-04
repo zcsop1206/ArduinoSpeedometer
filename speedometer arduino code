@@ -1,0 +1,73 @@
+#include <Wire.h> 
+#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars and 2 line display
+
+int hall_pin = 3;
+int LED_pin = 2;
+double pi = 3.14159265358979323846;
+int spikes = 0;
+bool magnet_close = false;
+float time_interval = 997;
+int i = 1;
+float magnets = 7;
+float tire_radius = 25;
+float rotations = 0;
+float rps = 0;
+float tire_circumference = 0.02*pi*tire_radius;
+float speed = 0;
+float distance = 0;
+float speed_limit = 6.94;
+bool speed_limit_crossed = false;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(hall_pin, INPUT);
+  pinMode(LED_pin, OUTPUT);
+  lcd.init();                      // initialize the lcd 
+  lcd.backlight();
+  lcd.setCursor(0,0);
+  lcd.print("speed:");
+  lcd.setCursor(10, 0);
+  lcd.print("kph");
+  lcd.setCursor(0,1);
+  lcd.print("distance:");
+  lcd.setCursor(13,1);
+  lcd.print("km");
+}
+
+void loop() {
+  int hall_reading = digitalRead(hall_pin);
+  double time = millis();
+  if(time<i*time_interval)
+  {
+    if(hall_reading == 0 && !magnet_close){
+      spikes++;
+      magnet_close = true;
+    }
+    else if(hall_reading != 0 && magnet_close){
+      magnet_close = false;
+    }
+  }
+  else{
+    rotations = spikes/magnets;
+    rps = rotations*1000.0/time_interval;
+    speed = tire_circumference*rps;
+    distance = distance + speed;
+    spikes = 0;
+    i++;
+    if(speed>speed_limit && !speed_limit_crossed){
+      digitalWrite(LED_pin, HIGH);
+      speed_limit_crossed = true;
+    }
+    else if(speed<speed_limit && speed_limit_crossed){
+      digitalWrite(LED_pin, LOW);
+      speed_limit_crossed = false;
+    }
+  }
+  lcd.setCursor(6, 0);
+  lcd.print(speed*18.0/5.0);
+  lcd.setCursor(9, 1);
+  lcd.print(distance/1000.0);
+  
+}
